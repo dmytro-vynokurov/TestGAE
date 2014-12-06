@@ -19,7 +19,7 @@ import webapp2
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Hello world! I am testing')
+        self.response.write('Hello world! I am testing GAE')
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler)
