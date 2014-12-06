@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+  <body>
+    {% for coordinate in coordinates %}
+        {{coordinate.date}}: {{ coordinate.longitude }} - {{ coordinate.latitude}}
+    {% endfor %}
+
+    <form action="/" method="post">
+      <div><input type="text" name="longitude"/></div>
+      <div><input type="text" name="latitude"/></div>
+      <div><input type="submit" value="Add coordinates"></div>
+    </form>
+
+  </body>
+</html>
+{% endautoescape %}
