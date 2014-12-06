@@ -30,6 +30,13 @@ class Coordinate(ndb.Model):
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
+        coordinates_query = Coordinate.query(ancestor=coordinate_key).order(-Coordinate.date)
+        coordinates = coordinates_query.fetch(10)
+
+        for coordinate in coordinates:
+            self.response.write(coordinate)
+
+
         self.response.headers['Content-Type'] = 'text/plain'
         self.response.write('Hello world! I am testing GAE')
 
