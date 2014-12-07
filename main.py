@@ -20,6 +20,8 @@ import urllib
 from google.appengine.ext import ndb
 import webapp2
 import jinja2
+import json
+import datetime
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -27,6 +29,23 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True)
 
 coordinate_key = ndb.Key('Coordinate', 'default_coordinate')
+
+
+def coordinate_to_json(coordinate):
+    return {
+        'longitude': coordinate.longitude,
+        'latitude': coordinate.latitude,
+        'date': str(coordinate.date),
+    }
+
+
+def coordinate_from_json(json_parameter):
+    coordinate = Coordinate(parent=coordinate_key)
+    coordinate.longitude = json_parameter.get('longitude')
+    coordinate.latitude = json_parameter.get('latitude')
+    # date_as_string = json_parameter.get('date')
+    # coordinate.date = datetime.datetime.strptime(date_as_string, '%Y-%m-%d %H:%M:%S.%f')
+    return coordinate
 
 
 class Coordinate(ndb.Model):
@@ -37,10 +56,8 @@ class Coordinate(ndb.Model):
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        print 'recieved get request'
         coordinates_query = Coordinate.query(ancestor=coordinate_key).order(-Coordinate.date)
         coordinates = coordinates_query.fetch(10)
-        print 'fetched coordinates: '+str(coordinates)
 
         template_values = {
             'coordinates': coordinates
@@ -48,19 +65,37 @@ class MainHandler(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('index.html')
         rendered_template = template.render(template_values)
 
-        print 'rendered template: '+str(rendered_template   )
-
         self.response.write(rendered_template)
 
     def post(self):
         coordinate = Coordinate(parent=coordinate_key)
-        print self.request.params
         coordinate.latitude = int(self.request.get('latitude'))
         coordinate.longitude = int(self.request.get('longitude'))
         coordinate.put()
         self.redirect('/')
 
 
-app = webapp2.WSGIApplication([
-                                  ('/', MainHandler)
-                              ], debug=True)
+class RestHandler(webapp2.RequestHandler, json.JSONEncoder):
+    def get(self):
+        coordinates_query = Coordinate.query(ancestor=coordinate_key).order(-Coordinate.date)
+        coordinates = coordinates_query.fetch(10)
+        result = []
+        for coordinate in coordinates:
+            result.append(coordinate_to_json(coordinate))
+        json.dump(result, self.response)
+
+    def post(self):
+        coordinate_as_text = self.request.body
+        coordinate_as_json = json.loads(coordinate_as_text)
+        coordinate = coordinate_from_json(coordinate_as_json)
+        coordinate.put()
+        self.response.set_status(200, 'OK')
+
+    def put(self):
+        pass
+
+    def delete(self):
+        pass
+
+
+app = webapp2.WSGIApplication([('/', MainHandler), ('/coordinates/', RestHandler)], debug=True)
